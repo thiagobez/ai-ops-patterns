@@ -1,0 +1,29 @@
+{
+  "name": "ai-ops-patterns",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Two human-in-the-loop AI operations patterns, extracted from a hub that runs three small companies",
+  "license": "MIT",
+  "author": "Thiago Bez",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "typecheck": "npm run typecheck --workspaces",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "bash scripts/check-secrets.sh",
+    "build": "npm run build --workspaces",
+    "demo:review-queue": "npm run demo -w @ai-ops/review-queue"
+  },
+  "devDependencies": {
+    "@anthropic-ai/sdk": "^0.131.0",
+    "@types/node": "^20.19.43",
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.11"
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "name": "@ai-ops/review-queue",
+  "version": "0.1.0",
+  "description": "LLM extracts, humans keep the pen: a review queue with lessons, metrics and a health check",
+  "license": "MIT",
+  "author": "Thiago Bez",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": "./dist/index.js"
+  },
+  "files": [
+    "dist",
+    "sql",
+    "public"
+  ],
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "build": "tsc -p tsconfig.build.json",
+    "demo": "npm run build && node dist/main.js"
+  },
+  "peerDependencies": {
+    "@anthropic-ai/sdk": ">=0.131.0"
+  },
+  "peerDependenciesMeta": {
+    "@anthropic-ai/sdk": {
+      "optional": true
+    }
+  }
+}

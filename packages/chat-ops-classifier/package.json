@@ -1,0 +1,29 @@
+{
+  "name": "@ai-ops/chat-ops-classifier",
+  "version": "0.1.0",
+  "description": "The chat group is the system of record: classify operations messages into a timeline, tasks and expense drafts, with an audit log",
+  "license": "MIT",
+  "author": "Thiago Bez",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": "./dist/index.js"
+  },
+  "files": [
+    "dist",
+    "sql"
+  ],
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "build": "tsc -p tsconfig.build.json"
+  },
+  "peerDependencies": {
+    "@anthropic-ai/sdk": ">=0.131.0"
+  },
+  "peerDependenciesMeta": {
+    "@anthropic-ai/sdk": {
+      "optional": true
+    }
+  }
+}
