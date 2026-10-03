@@ -91,7 +91,7 @@ The hub runs under a short list of rules that no agent may cross. They are worth
 
 ## What failed
 
-Before the review queue, the hub had an autonomous task queue: agents that planned work, wrote code in isolated worktrees, opened pull requests and reviewed each other. It worked technically and was switched off after a few months because nobody fed it. The demand came from an operator sitting in an interactive session, and that session, with a human reading every diff, became the real executor. The lesson carried into both packages here: autonomy that is not pulled by a human loop is overhead with a nice dashboard, and the valuable automation is the one that shortens the human's decision, not the one that removes it.
+Before the review queue, the hub had an autonomous task queue: agents that planned work, wrote code in isolated worktrees, opened pull requests and reviewed each other. It worked technically and was switched off within weeks because nobody fed it. The demand came from an operator sitting in an interactive session, and that session, with a human reading every diff, became the real executor. The lesson carried into both packages here: autonomy that is not pulled by a human loop is overhead with a nice dashboard, and the valuable automation is the one that shortens the human's decision, not the one that removes it.
 
 ## Honest limits
 
@@ -102,7 +102,7 @@ Before the review queue, the hub had an autonomous task queue: agents that plann
 
 ## About the author
 
-Thiago Bez is the Executive Director of HCB, a family-owned holding in Southern Brazil (commercial and residential real estate, a construction company and a hotel), and a board member of Beiramar Shopping. Since 2026 the holding's companies run on an in-house hub of AI agents that he designed and directs: statement intake with human review, a construction-site chat turned into timeline and expenses, 99 scheduled management routines. Before that, he directed political campaigns.
+Thiago Bez is the Executive Director of HCB, a family-owned holding in Southern Brazil (commercial and residential real estate, a construction company and a hotel), and a board member of Beiramar Shopping. Since 2026 the holding's companies run on an in-house hub of AI agents that he designed and directs: statement intake with human review, a construction-site chat turned into timeline and expenses, 99 scheduled management routines. Before that, he directed fifteen political campaigns in six years, from governor to mayor, with teams of up to 35 people.
 
 [LinkedIn URL]
 
