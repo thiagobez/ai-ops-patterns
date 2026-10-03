@@ -104,7 +104,7 @@ Before the review queue, the hub had an autonomous task queue: agents that plann
 
 Thiago Bez is the Executive Director of HCB, a family-owned holding in Southern Brazil (commercial and residential real estate, a construction company and a hotel), and a board member of Beiramar Shopping. Since 2026 the holding's companies run on an in-house hub of AI agents that he designed and directs: statement intake with human review, a construction-site chat turned into timeline and expenses, 99 scheduled management routines. Before that, he directed fifteen political campaigns in six years, from governor to mayor, with teams of up to 35 people.
 
-[LinkedIn URL]
+[linkedin.com/in/thiago-bez-68302311a](https://www.linkedin.com/in/thiago-bez-68302311a/)
 
 ## License
 
