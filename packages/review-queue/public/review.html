@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Review queue</title>
+<style>
+  :root { --bg: #fff; --fg: #1a1a1a; --muted: #6b6b6b; --line: #e3e3e3; --ok: #1b7f3b; --warn: #b26a00; --bad: #b3261e; --chip: #eef3ff; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #141414; --fg: #ececec; --muted: #9a9a9a; --line: #2c2c2c; --chip: #1f2a44; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 16px; font: 14px/1.45 system-ui, sans-serif; background: var(--bg); color: var(--fg); }
+  h1 { font-size: 18px; margin: 0 0 12px; }
+  header, section { max-width: 1100px; margin: 0 auto 16px; }
+  .bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  input, select, button, textarea { font: inherit; padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); color: var(--fg); }
+  button { cursor: pointer; }
+  button.primary { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; }
+  .card { border: 1px solid var(--line); border-radius: 8px; padding: 10px; }
+  .card b { display: block; font-size: 20px; }
+  .card small { color: var(--muted); }
+  .health { border-left: 4px solid var(--muted); }
+  .health.ok { border-left-color: var(--ok); }
+  .health.idle { border-left-color: var(--warn); }
+  .health.broken { border-left-color: var(--bad); }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { text-align: left; padding: 8px 6px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; font-size: 12px; text-transform: uppercase; }
+  td.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .chip { display: inline-block; padding: 1px 6px; border-radius: 10px; background: var(--chip); font-size: 12px; }
+  .muted { color: var(--muted); }
+  .actions { display: flex; gap: 4px; flex-wrap: wrap; }
+  textarea { width: 100%; min-height: 110px; font-family: ui-monospace, monospace; }
+  details { margin-top: 8px; }
+  #msg { min-height: 1.4em; color: var(--muted); }
+  @media (max-width: 700px) { .hide-sm { display: none; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>Review queue <span class="muted">— LLM extracts, humans keep the pen</span></h1>
+  <div class="bar">
+    <label>Tenant <input id="tenant" value="demo-co" size="10"></label>
+    <label>Reviewer <input id="reviewer" value="you" size="8"></label>
+    <label>Status
+      <select id="status">
+        <option value="pending">pending</option>
+        <option value="approved">approved</option>
+        <option value="corrected">corrected</option>
+        <option value="rejected">rejected</option>
+        <option value="">all</option>
+      </select>
+    </label>
+    <button id="refresh">Refresh</button>
+    <span id="msg"></span>
+  </div>
+</header>
+
+<section>
+  <div class="cards" id="metrics"></div>
+  <div class="card health" id="health" style="margin-top:8px"></div>
+</section>
+
+<section>
+  <details>
+    <summary>Submit a document (mock format: <code>YYYY-MM-DD | description | amount</code>)</summary>
+    <textarea id="doc">2026-09-02 | Rent received - unit 12 | 1500.00
+2026-09-03 | Condo fee - unit 12 | -320.00
+2026-09-05 | Structural engineering project - unit 7 | -4800.00
+2026-09-08 | Transfer to savings account | -2000.00
+2026-09-09 | Quarterly water bill | -140.50</textarea>
+    <div class="bar" style="margin-top:6px">
+      <input id="source" value="manual:paste" size="18">
+      <button class="primary" id="submit">Extract and enqueue</button>
+    </div>
+  </details>
+</section>
+
+<section>
+  <table>
+    <thead>
+      <tr>
+        <th>Date</th><th>Description</th><th class="num">Amount</th><th>Category</th><th class="hide-sm">Entity</th><th class="hide-sm">Conf.</th><th>Actions</th>
+      </tr>
+    </thead>
+    <tbody id="rows"></tbody>
+  </table>
+</section>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  const tenant = () => $("tenant").value.trim();
+  const reviewer = () => $("reviewer").value.trim();
+
+  async function api(method, path, body) {
+    const res = await fetch(path, {
+      method,
+      headers: body ? { "content-type": "application/json" } : {},
+      body: body ? JSON.stringify(body) : undefined,
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok && res.status !== 503) throw new Error(data.message || res.statusText);
+    return data;
+  }
+
+  function say(text) { $("msg").textContent = text; }
+
+  function esc(s) { return String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }
+
+  async function load() {
+    if (!tenant()) return say("tenant is required");
+    try {
+      const status = $("status").value;
+      const q = `?tenant=${encodeURIComponent(tenant())}`;
+      const [queue, metrics, health] = await Promise.all([
+        api("GET", `/queue${q}${status ? `&status=${status}` : ""}`),
+        api("GET", `/metrics${q}`),
+        api("GET", `/health${q}`),
+      ]);
+      renderMetrics(metrics);
+      renderHealth(health);
+      renderRows(queue.items);
+      say(`${queue.items.length} item(s)`);
+    } catch (e) { say(e.message); }
+  }
+
+  function renderMetrics(m) {
+    const acc = m.firstPassAccuracy === null ? "—" : `${(m.firstPassAccuracy * 100).toFixed(1)}%`;
+    const cards = [
+      ["Pending", m.pending, m.oldestPendingAt ? `oldest ${m.oldestPendingAt.slice(0, 10)}` : ""],
+      ["Reviewed", m.reviewed, `${m.approved} ok · ${m.corrected} fixed · ${m.rejected} rejected`],
+      ["First-pass accuracy", acc, "approved / reviewed"],
+      ["Lessons", m.lessons, `${m.lessonsApplied} applications`],
+    ];
+    $("metrics").innerHTML = cards.map(([t, v, s]) => `<div class="card"><small>${t}</small><b>${esc(v)}</b><small>${esc(s)}</small></div>`).join("");
+  }
+
+  function renderHealth(h) {
+    const el = $("health");
+    el.className = `card health ${h.status}`;
+    el.innerHTML = `<small>Health</small><b style="font-size:16px">${h.status.toUpperCase()}</b><div>${esc(h.reason)}</div>` +
+      (h.lastDocument ? `<small>last document: ${esc(h.lastDocument.source)} · ${esc(h.lastDocument.status)} · ${esc(h.lastDocument.receivedAt.slice(0, 16).replace("T", " "))}</small>` : "");
+  }
+
+  function renderRows(items) {
+    $("rows").innerHTML = items.map((i) => {
+      const l = i.line;
+      const lesson = i.appliedLessonId ? ` <span class="chip" title="lesson ${esc(i.appliedLessonId)}">lesson</span>` : "";
+      const changed = i.category !== l.suggestedCategory ? ` <span class="muted" title="model said">(was ${esc(l.suggestedCategory ?? "null")})</span>` : "";
+      const actions = i.status === "pending"
+        ? `<div class="actions"><button data-act="approve" data-id="${i.id}">Approve</button><button data-act="correct" data-id="${i.id}">Correct</button><button data-act="reject" data-id="${i.id}">Reject</button></div>`
+        : `<span class="muted">${esc(i.status)} by ${esc(i.reviewedBy)}${i.reviewNote ? ` — ${esc(i.reviewNote)}` : ""}</span>`;
+      return `<tr>
+        <td>${esc(l.date)}</td>
+        <td>${esc(l.description)}</td>
+        <td class="num">${Number(l.amount).toFixed(2)}</td>
+        <td>${esc(i.category ?? "—")}${lesson}${changed}</td>
+        <td class="hide-sm">${esc(i.entityCode ?? "—")}</td>
+        <td class="hide-sm">${(l.confidence * 100).toFixed(0)}%</td>
+        <td>${actions}</td>
+      </tr>`;
+    }).join("");
+  }
+
+  $("rows").addEventListener("click", async (ev) => {
+    const btn = ev.target.closest("button[data-act]");
+    if (!btn) return;
+    const id = btn.dataset.id;
+    const body = { tenantId: tenant(), reviewer: reviewer() };
+    try {
+      if (btn.dataset.act === "correct") {
+        const category = prompt("New category (leave empty to keep):");
+        if (category === null) return;
+        const entityCode = prompt("New entity code (leave empty to keep):");
+        if (entityCode === null) return;
+        if (category) body.category = category;
+        if (entityCode) body.entityCode = entityCode;
+      } else if (btn.dataset.act === "reject") {
+        const reason = prompt("Why is this line rejected?");
+        if (!reason) return;
+        body.reason = reason;
+      }
+      await api("POST", `/items/${encodeURIComponent(id)}/${btn.dataset.act}`, body);
+      await load();
+    } catch (e) { say(e.message); }
+  });
+
+  $("submit").addEventListener("click", async () => {
+    try {
+      const r = await api("POST", "/documents", { tenantId: tenant(), source: $("source").value, text: $("doc").value });
+      say(`enqueued ${r.items.length} line(s), ${r.lessonsApplied} with a lesson applied`);
+      await load();
+    } catch (e) { say(e.message); await load(); }
+  });
+
+  $("refresh").addEventListener("click", load);
+  $("status").addEventListener("change", load);
+  load();
+</script>
+</body>
+</html>
